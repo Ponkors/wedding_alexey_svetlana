@@ -1,0 +1,1 @@
+ /Users/vlad_kirichuk/Downloads/wedding_template_web-main/lib/l10n/app_localizations_ru.dart /Users/vlad_kirichuk/Downloads/wedding_template_web-main/lib/l10n/app_localizations.dart:  /Users/vlad_kirichuk/Downloads/wedding_template_web-main/l10n.yaml /Users/vlad_kirichuk/Downloads/wedding_template_web-main/lib/l10n/app_ru.arb
