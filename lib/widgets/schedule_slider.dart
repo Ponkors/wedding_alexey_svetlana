@@ -26,29 +26,20 @@ class _ScheduleSliderState extends State<ScheduleSlider> {
   int _currentIndex = 0;
   final List<Map<String, dynamic>> _schedules = [
     {
+      'time': '11:00',
+      'title': 'Выкуп невесты',
+      'location': 'Большие Радваничи',
+      'address': 'д. Большие Радваничи, ул. Комсомольская, 2',
+      'image': 'assets/images/wedding_wife_home.jpg',
+      'icon': Icons.people,
+      'color': Colors.blue.shade100,
+    },
+    {
       'time': '12:20',
       'title': 'Регистрация союза',
       'location': 'ЗАГС',
       'address': 'г. Брест, наб.Франциска Скорины, 38',
       'image': 'assets/images/wedding_registration.jpg',
-      'icon': Icons.people,
-      'color': Colors.blue.shade100,
-    },
-    // {
-    //   'time': '12:50',
-    //   'title': 'Венчание',
-    //   'location': AppConstants.churchName,
-    //   'address': AppConstants.churchAddress,
-    //   'image': AppConstants.churchImage,
-    //   'icon': Icons.church,
-    //   'color': Colors.blue.shade100,
-    // },
-    {
-      'time': '13:30',
-      'title': 'Сбор гостей',
-      'location': 'ЗАГС',
-      'address': 'г. Брест, наб.Франциска Скорины, 38',
-      'image': 'assets/images/wedding_meet.jpg',
       'icon': Icons.people,
       'color': Colors.blue.shade100,
     },

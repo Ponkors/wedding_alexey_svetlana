@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'dart:html' as html;
 import '../constants/app_constants.dart';
 import 'section_title.dart';
 
@@ -29,31 +32,95 @@ class _RSVPSectionState extends State<RSVPSection> {
     super.dispose();
   }
 
+  void submitViaForm(Map<String, String> fields) {
+    final uri = Uri.parse(
+      'https://script.google.com/macros/s/AKfycbyFr_Cd65PfHuSn_URa1E33JVxowDfNhMdXjHNh8NGzWyh0KECu37hBVxg9n8I4D5XDrg/exec',
+    );
+
+    final encodedData = fields.entries
+        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+
+    html.HttpRequest.request(
+      uri.toString(),
+      method: 'POST',
+      sendData: encodedData,
+      requestHeaders: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    ).then((response) {
+      print('Форма успешно отправлена: ${response.responseText}');
+      _resetForm();
+    }).catchError((error) {
+      print('Ошибка при отправке формы: $error');
+    });
+  }
+
+
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isSubmitting = true;
       });
 
-      // Имитация отправки формы
-      await Future.delayed(2.seconds);
-
-      setState(() {
-        _isSubmitting = false;
-        _isSuccess = true;
-      });
-
-      await Future.delayed(3.seconds);
-
-      if (mounted) {
-        setState(() {
-          _isSuccess = false;
-          _formKey.currentState!.reset();
-          _isAttending = true;
-          _needsTransfer = true;
+      try {
+        submitViaForm({
+          'name': _nameController.text,
+          'phone': _phoneController.text,
+          'guests': _guestsController.text,
+          'isAttending': _isAttending.toString(),
+          'transfer': _needsTransfer.toString(),
         });
+
+        await Future.delayed(const Duration(seconds: 2));
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Спасибо за ответ!'),
+              backgroundColor: Color(AppConstants.primaryColorValue),
+            ),
+          );
+          _formKey.currentState!.reset();
+          setState(() {
+            _isAttending = true;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Произошла ошибка при отправке формы. Пожалуйста, попробуйте позже.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
       }
     }
+  }
+
+  void _resetForm() {
+    _formKey.currentState?.reset();
+    setState(() {
+      _nameController.clear();
+      _phoneController.clear();
+      _guestsController.clear();
+      _isSuccess = false;
+      _isAttending = true;
+      _needsTransfer = true;
+    });
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -122,7 +189,7 @@ class _RSVPSectionState extends State<RSVPSection> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Пожалуйста, заполните форму до 4 октября',
+              'Пожалуйста, заполните форму до 20 сентября',
               style: GoogleFonts.raleway(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -332,7 +399,7 @@ class _RSVPSectionState extends State<RSVPSection> {
           _isAttending = value;
           // Если пользователь не может прийти, сбрасываем выбор трансфера
           if (!value) {
-            _needsTransfer = true;
+            _needsTransfer = false;
           }
         });
       },
