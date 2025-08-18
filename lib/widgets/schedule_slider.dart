@@ -1,13 +1,8 @@
-import 'package:carousel_slider/carousel_slider.dart';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wedding/widgets/section_title.dart';
 import '../constants/app_constants.dart';
-
-import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ScheduleSlider extends StatefulWidget {
   final GlobalKey locationKey;
@@ -18,12 +13,13 @@ class ScheduleSlider extends StatefulWidget {
   });
 
   @override
-  State<ScheduleSlider> createState() =>
-      _ScheduleSliderState();
+  State<ScheduleSlider> createState() => _ScheduleSliderState();
 }
 
 class _ScheduleSliderState extends State<ScheduleSlider> {
   int _currentIndex = 0;
+  late PageController _pageController;
+  double _page = 0;
   final List<Map<String, dynamic>> _schedules = [
     {
       'time': '11:00',
@@ -54,6 +50,23 @@ class _ScheduleSliderState extends State<ScheduleSlider> {
     },
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.8)
+      ..addListener(() {
+        setState(() {
+          _page = _pageController.page ?? 0;
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   void _scrollToLocation() {
     final context = widget.locationKey.currentContext;
     if (context != null) {
@@ -65,10 +78,18 @@ class _ScheduleSliderState extends State<ScheduleSlider> {
     }
   }
 
+  void _goTo(int index) {
+    _pageController.animateToPage(
+      index.clamp(0, _schedules.length - 1),
+      duration: 350.ms,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final isSmallScreen = size.width < 600;
+    final isSmallScreen = size.width < 800;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40),
@@ -87,198 +108,377 @@ class _ScheduleSliderState extends State<ScheduleSlider> {
           Text(
             'Расписание дня',
             style: GoogleFonts.playfairDisplay(
-              fontSize: isSmallScreen ? 28 : 36,
-              fontWeight: FontWeight.w600,
+              fontSize: isSmallScreen ? 28 : 40,
+              fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
-          ),
+          ).animate().fadeIn(),
           const SizedBox(height: 8),
           Text(
             'Наши самые важные моменты',
-            style: GoogleFonts.playfairDisplay(
-              fontSize: isSmallScreen ? 18 : 32,
-              fontWeight: FontWeight.w300,
-              color: Colors.grey.shade600,
+            style: GoogleFonts.raleway(
+              fontSize: isSmallScreen ? 16 : 18,
+              fontWeight: FontWeight.w400,
+              color: Colors.grey.shade700,
+              letterSpacing: 0.2,
             ),
-          ),
+          ).animate().fadeIn(delay: 100.ms),
           const SizedBox(height: 40),
 
-          // Новый дизайн карусели
+          // Карусель с глубиной и параллаксом
           SizedBox(
-            height: isSmallScreen ? 500 : 600,
-            child: PageView.builder(
-              controller:
-                  PageController(viewportFraction: isSmallScreen ? 0.85 : 0.7),
-              onPageChanged: (index) => setState(() => _currentIndex = index),
-              itemCount: _schedules.length,
-              itemBuilder: (context, index) {
-                final schedule = _schedules[index];
-                return AnimatedScale(
-                  duration: 300.ms,
-                  scale: _currentIndex == index ? 1 : 0.9,
-                  child: _buildTimelineCard(schedule, isSmallScreen),
-                );
-              },
+            height: isSmallScreen ? 520 : 600,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: (index) =>
+                      setState(() => _currentIndex = index),
+                  itemCount: _schedules.length,
+                  itemBuilder: (context, index) {
+                    final schedule = _schedules[index];
+                    final delta = (index - _page);
+                    final isFocused = index == _currentIndex;
+                    final rotationY =
+                        isSmallScreen ? 0.0 : delta.clamp(-1.0, 1.0) * 0.12;
+                    final scale = 1 - (delta.abs() * 0.06);
+                    return Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.identity()
+                        ..setEntry(3, 2, 0.001)
+                        ..rotateY(rotationY)
+                        ..scale(scale),
+                      child: _buildParallaxCard(
+                        context,
+                        schedule,
+                        isSmallScreen,
+                        delta,
+                        isFocused,
+                      ),
+                    );
+                  },
+                ),
+                if (!isSmallScreen) ...[
+                  Positioned(
+                    left: 0,
+                    child: _NavArrow(
+                      icon: Icons.chevron_left,
+                      onTap: () => _goTo(_currentIndex - 1),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    child: _NavArrow(
+                      icon: Icons.chevron_right,
+                      onTap: () => _goTo(_currentIndex + 1),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
 
           const SizedBox(height: 30),
 
-          // Индикаторы с анимацией
+          // Индикаторы с анимацией (pill)
           Wrap(
             spacing: 8,
             children: List.generate(_schedules.length, (index) {
+              final active = _currentIndex == index;
               return AnimatedContainer(
-                  duration: 300.ms,
-                  width: _currentIndex == index ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _currentIndex == index
-                        ? const Color(AppConstants.primaryColorValue)
-                        : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
-                  ));
+                duration: 250.ms,
+                curve: Curves.easeOut,
+                width: active ? 26 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: active
+                      ? const Color(AppConstants.primaryColorValue)
+                      : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              );
             }),
-          ),
+          ).animate().fadeIn(delay: 200.ms),
         ],
       ),
     );
   }
 
-  Widget _buildTimelineCard(Map<String, dynamic> schedule, bool isSmallScreen) {
+  Widget _buildParallaxCard(
+    BuildContext context,
+    Map<String, dynamic> schedule,
+    bool isSmallScreen,
+    double delta,
+    bool isFocused,
+  ) {
+    final imageParallax = delta * -20;
+    final shadowOpacity = isFocused ? 0.16 : 0.06;
+    final borderColor =
+        const Color(AppConstants.primaryColorValue).withOpacity(0.08);
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          )
+            color: Colors.black.withOpacity(shadowOpacity),
+            blurRadius: 40,
+            offset: const Offset(0, 24),
+          ),
         ],
       ),
-      child: Column(
-        children: [
-          // Верхняя часть с изображением
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            child: Stack(
-              children: [
-                Image.asset(
-                  schedule['image'],
-                  height: isSmallScreen ? 180 : 250,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-                // Positioned(
-                //   top: 20,
-                //   right: 20,
-                //   child: Container(
-                //     padding: const EdgeInsets.all(12),
-                //     decoration: BoxDecoration(
-                //       color: schedule['color'] as Color,
-                //       shape: BoxShape.circle,
-                //     ),
-                //     child: Icon(
-                //       schedule['icon'] as IconData,
-                //       color: Colors.white,
-                //       size: 24,
-                //     ),
-                //   ).animate().scale(delay: 200.ms),
-                // ),
-              ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: Stack(
+          children: [
+            // Фоновое изображение с параллаксом
+            Transform.translate(
+              offset: Offset(imageParallax, 0),
+              child: Image.asset(
+                schedule['image'],
+                height: isSmallScreen ? 520 : 600,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
+            // Градиент для читабельности
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.0),
+                      Colors.black.withOpacity(0.25),
+                      Colors.black.withOpacity(0.45),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
-          // Нижняя часть с информацией
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(isSmallScreen ? 20 : 30),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Время
-                  Text(
-                    schedule['time'],
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: isSmallScreen ? 40 : 60,
-                      fontWeight: FontWeight.w700,
-                      color: schedule['color'] as Color,
-                    ),
-                  ).animate().fadeIn(delay: 100.ms),
-
-                  // Разделитель
-                  Container(
-                    width: 60,
-                    height: 3,
-                    margin: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: schedule['color'] as Color,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ).animate().scaleX(begin: 0),
-
-                  // Название события
-                  Text(
-                    schedule['title'],
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: isSmallScreen ? 20 : 24,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ).animate().fadeIn(delay: 200.ms),
-
-                  // Локация
-                  Text(
-                    schedule['location'],
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: isSmallScreen ? 16 : 18,
-                      color: Colors.grey.shade700,
-                    ),
-                  ).animate().fadeIn(delay: 300.ms),
-
-                  // Адрес
-                  Text(
-                    schedule['address'],
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: isSmallScreen ? 14 : 16,
-                      color: Colors.grey.shade600,
-                    ),
-                  ).animate().fadeIn(delay: 400.ms),
-
-                  const SizedBox(height: 20),
-
-                  // Кнопка (если нужно)
-                  if (schedule['title'] == 'Фуршет')
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.map, size: 18),
-                      label: const Text('Показать на карте'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor:
-                            const Color(AppConstants.primaryColorValue),
-                        side: BorderSide(
-                            color: const Color(AppConstants.primaryColorValue)
-                                .withOpacity(0.3)),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+            // Время в виде чипа
+            Positioned(
+              top: 18,
+              left: 18,
+              child: _GlassChip(
+                child: Row(
+                  children: [
+                    const Icon(Icons.schedule, size: 16, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      schedule['time'],
+                      style: GoogleFonts.raleway(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
                       ),
-                      onPressed: _scrollToLocation,
-                    )
-                        .animate()
-                        .fadeIn(delay: 500.ms)
-                        .shake(delay: 700.ms, hz: 3)
-                ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Панель с информацией (glassmorphism)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: _GlassPanel(
+                borderColor: borderColor,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                schedule['title'],
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: isSmallScreen ? 22 : 26,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  const Icon(Icons.place,
+                                      size: 16, color: Colors.white70),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      schedule['location'],
+                                      style: GoogleFonts.raleway(
+                                        fontSize: isSmallScreen ? 13 : 14,
+                                        color: Colors.white.withOpacity(0.9),
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const SizedBox(width: 22),
+                                  Expanded(
+                                    child: Text(
+                                      schedule['address'],
+                                      style: GoogleFonts.raleway(
+                                        fontSize: isSmallScreen ? 12 : 13,
+                                        color: Colors.white70,
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        _GlassIconButton(
+                          icon: Icons.map,
+                          tooltip: 'Показать локацию',
+                          onTap: _scrollToLocation,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavArrow extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _NavArrow({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Icon(icon, size: 28, color: Colors.black87),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassPanel extends StatelessWidget {
+  final Widget child;
+  final Color? borderColor;
+
+  const _GlassPanel({required this.child, this.borderColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+                color: borderColor ?? Colors.white.withOpacity(0.12)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassChip extends StatelessWidget {
+  final Widget child;
+  const _GlassChip({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withOpacity(0.14)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _GlassIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Material(
+            color: Colors.white.withOpacity(0.14),
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Icon(icon, color: Colors.white, size: 22),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

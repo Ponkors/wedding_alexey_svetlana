@@ -38,7 +38,8 @@ class _RSVPSectionState extends State<RSVPSection> {
     );
 
     final encodedData = fields.entries
-        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .map((e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
 
     html.HttpRequest.request(
@@ -55,7 +56,6 @@ class _RSVPSectionState extends State<RSVPSection> {
       print('Ошибка при отправке формы: $error');
     });
   }
-
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
@@ -90,7 +90,8 @@ class _RSVPSectionState extends State<RSVPSection> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Произошла ошибка при отправке формы. Пожалуйста, попробуйте позже.'),
+              content: Text(
+                  'Произошла ошибка при отправке формы. Пожалуйста, попробуйте позже.'),
               backgroundColor: Colors.red,
             ),
           );
