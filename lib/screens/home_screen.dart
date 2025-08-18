@@ -3,17 +3,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:wedding/widgets/details_section.dart';
 import 'package:wedding/widgets/schedule_slider.dart';
 import '../constants/app_constants.dart';
-import '../widgets/about_section.dart';
-import '../widgets/dress_code_section.dart';
+// import '../widgets/dress_code_section.dart';
 import '../widgets/flipp_clock.dart';
 import '../widgets/location_section.dart';
 import '../widgets/rsvp_section.dart';
-import '../widgets/schedule_section.dart';
-import '../widgets/story_section.dart';
+// import '../widgets/story_section.dart';
 import '../widgets/scroll_indicator.dart';
-import '../widgets/wedding_decorations.dart';
+// import '../widgets/wedding_decorations.dart';
 import '../widgets/welcome_section.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../utils/responsive.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -29,6 +28,7 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            // Hero section оставляем full-bleed, но размеры текста адаптируем
             Container(
               height: MediaQuery.of(context).size.height,
               decoration: BoxDecoration(
@@ -55,7 +55,10 @@ class HomeScreen extends StatelessWidget {
                       Text(
                         AppConstants.groomName,
                         style: GoogleFonts.playfairDisplay(
-                          fontSize: 48,
+                          fontSize: Responsive.isMobile(
+                                  MediaQuery.of(context).size.width)
+                              ? 36
+                              : 56,
                           color: Colors.white70,
                           letterSpacing: 2,
                           fontWeight: FontWeight.w400,
@@ -74,7 +77,10 @@ class HomeScreen extends StatelessWidget {
                       Text(
                         '&',
                         style: GoogleFonts.playfairDisplay(
-                          fontSize: 36,
+                          fontSize: Responsive.isMobile(
+                                  MediaQuery.of(context).size.width)
+                              ? 28
+                              : 40,
                           color: Colors.white70,
                           letterSpacing: 2,
                           fontWeight: FontWeight.w300,
@@ -93,7 +99,10 @@ class HomeScreen extends StatelessWidget {
                       Text(
                         AppConstants.brideName,
                         style: GoogleFonts.playfairDisplay(
-                          fontSize: 48,
+                          fontSize: Responsive.isMobile(
+                                  MediaQuery.of(context).size.width)
+                              ? 36
+                              : 56,
                           color: Colors.white70,
                           letterSpacing: 2,
                           fontWeight: FontWeight.w400,
@@ -113,7 +122,10 @@ class HomeScreen extends StatelessWidget {
                       Text(
                         AppConstants.weddingDateString,
                         style: GoogleFonts.playfairDisplay(
-                          fontSize: 24,
+                          fontSize: Responsive.isMobile(
+                                  MediaQuery.of(context).size.width)
+                              ? 18
+                              : 24,
                           color: Colors.white70,
                           letterSpacing: 1,
                           fontWeight: FontWeight.w300,
@@ -138,6 +150,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+            // Секции центрируют контент сами (см. responsive обертки внутри)
             const WelcomeSection(),
             ScheduleSlider(locationKey: locationKey),
             const DetailsSection(),

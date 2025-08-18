@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+// import 'dart:convert';
+// import 'package:http/http.dart' as http;
 import 'dart:html' as html;
 import '../constants/app_constants.dart';
 import 'section_title.dart';
+import '../utils/responsive.dart';
 
 class RSVPSection extends StatefulWidget {
   const RSVPSection({super.key});
@@ -118,20 +119,20 @@ class _RSVPSectionState extends State<RSVPSection> {
     });
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
+  // void _showError(String message) {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(content: Text(message)),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
-    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    final width = MediaQuery.of(context).size.width;
+    final isSmallScreen = width < 600;
     final cardPadding = isSmallScreen ? 20.0 : 40.0;
 
     return Container(
-      padding: EdgeInsets.symmetric(
-          vertical: 80, horizontal: isSmallScreen ? 20 : 40),
+      padding: const EdgeInsets.symmetric(vertical: 80),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -142,20 +143,31 @@ class _RSVPSectionState extends State<RSVPSection> {
           ],
         ),
       ),
-      child: Column(
-        children: [
-          const SectionTitle(
-            title: 'Подтвердите участие',
-            subtitle: 'Мы будем рады видеть вас на нашем торжестве',
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+              horizontal: Responsive.horizontalPadding(width)),
+          child: ConstrainedBox(
+            constraints:
+                BoxConstraints(maxWidth: Responsive.contentMaxWidth(width)),
+            child: Column(
+              children: [
+                const SectionTitle(
+                  title: 'Подтвердите участие',
+                  subtitle: 'Мы будем рады видеть вас на нашем торжестве',
+                ),
+                const SizedBox(height: 50),
+                AnimatedSwitcher(
+                  duration: 500.ms,
+                  child: _isSuccess
+                      ? _buildSuccessMessage()
+                      : _buildRSVPForm(isSmallScreen, cardPadding),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 50),
-          AnimatedSwitcher(
-            duration: 500.ms,
-            child: _isSuccess
-                ? _buildSuccessMessage()
-                : _buildRSVPForm(isSmallScreen, cardPadding),
-          ),
-        ],
+        ),
       ),
     );
   }
